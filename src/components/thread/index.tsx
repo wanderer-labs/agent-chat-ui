@@ -102,6 +102,30 @@ export function Thread() {
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
+  // Lucky prompts for "I'm feeling lucky" button
+  const luckyPrompts = [
+    "Create a beautiful landing page for a coffee shop",
+    "Design a dashboard for tracking fitness goals", 
+    "Build a portfolio website for a photographer",
+    "Make a booking system for a restaurant",
+    "Create a weather app with animations",
+    "Design a task management tool",
+    "Build a recipe sharing platform",
+    "Create a music player interface",
+    "Design a travel booking website",
+    "Make a social media profile page",
+    "Create a modern e-commerce product page",
+    "Design a meditation and mindfulness app",
+    "Build a real estate listing website",
+    "Create a cryptocurrency trading dashboard",
+    "Design a food delivery app interface",
+    "Make a workout tracking application",
+    "Create a news aggregator website",
+    "Design a video streaming platform",
+    "Build a job board and career portal",
+    "Create a plant care and garden tracker"
+  ];
+
   const stream = useStreamContext();
   const messages = stream.messages;
   const isLoading = stream.isLoading;
@@ -167,6 +191,45 @@ export function Thread() {
       id: uuidv4(),
       type: "human",
       content: input.trim(),
+    };
+
+    const toolMessages = ensureToolCallsHaveResponses(stream.messages);
+
+    const context =
+      Object.keys(artifactContext).length > 0 ? artifactContext : undefined;
+
+    stream.submit(
+      { messages: [...toolMessages, newHumanMessage], context },
+      {
+        streamMode: ["values"],
+        optimisticValues: (prev) => ({
+          ...prev,
+          context,
+          messages: [
+            ...(prev.messages ?? []),
+            ...toolMessages,
+            newHumanMessage,
+          ],
+        }),
+      },
+    );
+
+    setInput("");
+  };
+
+  const handleLuckyClick = () => {
+    if (isLoading) return;
+    
+    const randomPrompt = luckyPrompts[Math.floor(Math.random() * luckyPrompts.length)];
+    setInput(randomPrompt);
+    
+    // Auto-submit the random prompt
+    setFirstTokenReceived(false);
+
+    const newHumanMessage: Message = {
+      id: uuidv4(),
+      type: "human",
+      content: randomPrompt,
     };
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
@@ -382,6 +445,18 @@ export function Thread() {
                         )}
                       </form>
                     </div>
+                  </div>
+                  
+                  {/* I'm Feeling Lucky Button */}
+                  <div className="flex justify-center mt-4">
+                    <Button
+                      onClick={handleLuckyClick}
+                      variant="outline"
+                      disabled={isLoading}
+                      className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm"
+                    >
+                      I'm Feeling Lucky
+                    </Button>
                   </div>
                 </div>
               </div>
