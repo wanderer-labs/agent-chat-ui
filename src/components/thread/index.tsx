@@ -12,19 +12,15 @@ import {
 import { LangGraphLogoSVG } from "../icons/langgraph";
 import { TooltipIconButton } from "./tooltip-icon-button";
 import {
-  LoaderCircle,
   PanelRightOpen,
   PanelRightClose,
   SquarePen,
   XIcon,
-  Plus,
 } from "lucide-react";
 import { useQueryState, parseAsBoolean } from "nuqs";
 import ThreadHistory from "./history";
 import { toast } from "sonner";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
 import { GitHubSVG } from "../icons/github";
 import {
   Tooltip,
@@ -32,8 +28,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../ui/tooltip";
-import { useFileUpload } from "@/hooks/use-file-upload";
-import { ContentBlocksPreview } from "./ContentBlocksPreview";
 import {
   useArtifactOpen,
   ArtifactContent,
@@ -42,6 +36,8 @@ import {
 } from "./artifact";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { useArtifact } from "./artifact";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCircleArrowRight, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 function OpenGitHubRepo() {
   return (
@@ -102,20 +98,7 @@ export function Thread() {
     "chatHistoryOpen",
     parseAsBoolean.withDefault(false),
   );
-  const [hideToolCalls, setHideToolCalls] = useQueryState(
-    "hideToolCalls",
-    parseAsBoolean.withDefault(false),
-  );
   const [input, setInput] = useState("");
-  const {
-    contentBlocks,
-    setContentBlocks,
-    handleFileUpload,
-    dropRef,
-    removeBlock,
-    dragOver,
-    handlePaste,
-  } = useFileUpload();
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
@@ -177,17 +160,13 @@ export function Thread() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if ((input.trim().length === 0 && contentBlocks.length === 0) || isLoading)
-      return;
+    if (input.trim().length === 0 || isLoading) return;
     setFirstTokenReceived(false);
 
     const newHumanMessage: Message = {
       id: uuidv4(),
       type: "human",
-      content: [
-        ...(input.trim().length > 0 ? [{ type: "text", text: input }] : []),
-        ...contentBlocks,
-      ] as Message["content"],
+      content: input.trim(),
     };
 
     const toolMessages = ensureToolCallsHaveResponses(stream.messages);
@@ -212,7 +191,6 @@ export function Thread() {
     );
 
     setInput("");
-    setContentBlocks([]);
   };
 
   const chatStarted = !!threadId || !!messages.length;
@@ -345,7 +323,10 @@ export function Thread() {
                   </div>
                 ) : isLoading && !firstTokenReceived ? (
                   <div className="flex items-center gap-2">
-                    <LoaderCircle className="h-6 w-6 animate-spin" />
+                    <FontAwesomeIcon 
+                      icon={faSpinner} 
+                      className="h-6 w-6 animate-spin text-gray-600" 
+                    />
                     <span>Generating...</span>
                   </div>
                 ) : null}
@@ -356,26 +337,17 @@ export function Thread() {
           {/* Bottom Input Form */}
           <div className="border-t bg-white p-4">
             <div
-              ref={dropRef}
               className={cn(
-                "bg-muted relative z-10 mx-auto w-full max-w-3xl rounded-2xl shadow-xs transition-all",
-                dragOver
-                  ? "border-primary border-2 border-dotted"
-                  : "border border-solid",
+                "bg-muted relative z-10 mx-auto w-full max-w-3xl rounded-2xl shadow-xs transition-all border border-solid",
               )}
             >
               <form
                 onSubmit={handleSubmit}
-                className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2"
+                className="flex items-end gap-2 p-3"
               >
-                <ContentBlocksPreview
-                  blocks={contentBlocks}
-                  onRemove={removeBlock}
-                />
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onPaste={handlePaste}
                   onKeyDown={(e) => {
                     if (
                       e.key === "Enter" &&
@@ -389,65 +361,37 @@ export function Thread() {
                       form?.requestSubmit();
                     }
                   }}
-                  placeholder="Type your message..."
-                  className="field-sizing-content resize-none border-none bg-transparent p-3.5 pb-0 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
+                  placeholder="Go anywhere"
+                  className="flex-1 field-sizing-content resize-none border-none bg-transparent p-2 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none min-h-[40px] max-h-[120px]"
                 />
 
-                <div className="flex items-center gap-6 p-2 pt-4">
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="render-tool-calls"
-                        checked={hideToolCalls ?? false}
-                        onCheckedChange={setHideToolCalls}
-                      />
-                      <Label
-                        htmlFor="render-tool-calls"
-                        className="text-sm text-gray-600"
-                      >
-                        Hide Tool Calls
-                      </Label>
-                    </div>
-                  </div>
-                  <Label
-                    htmlFor="file-input"
-                    className="flex cursor-pointer items-center gap-2"
+                {stream.isLoading ? (
+                  <Button
+                    key="stop"
+                    onClick={() => stream.stop()}
+                    variant="ghost"
+                    className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100"
                   >
-                    <Plus className="size-5 text-gray-600" />
-                    <span className="text-sm text-gray-600">
-                      Upload PDF or Image
-                    </span>
-                  </Label>
-                  <input
-                    id="file-input"
-                    type="file"
-                    onChange={handleFileUpload}
-                    multiple
-                    accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                    className="hidden"
-                  />
-                  {stream.isLoading ? (
-                    <Button
-                      key="stop"
-                      onClick={() => stream.stop()}
-                      className="ml-auto"
-                    >
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                      Cancel
-                    </Button>
-                  ) : (
-                    <Button
-                      type="submit"
-                      className="ml-auto shadow-md transition-all"
-                      disabled={
-                        isLoading ||
-                        (!input.trim() && contentBlocks.length === 0)
-                      }
-                    >
-                      Send
-                    </Button>
-                  )}
-                </div>
+                    <FontAwesomeIcon 
+                      icon={faSpinner} 
+                      className="text-gray-600 animate-spin" 
+                      size="lg"
+                    />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="ghost"
+                    className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100"
+                    disabled={isLoading || !input.trim()}
+                  >
+                    <FontAwesomeIcon 
+                      icon={faCircleArrowRight} 
+                      className="text-blue-600" 
+                      size="lg"
+                    />
+                  </Button>
+                )}
               </form>
             </div>
           </div>
