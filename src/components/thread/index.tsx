@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState as useReactState } from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
@@ -38,6 +38,30 @@ import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { useArtifact } from "./artifact";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleArrowRight, faSpinner } from "@fortawesome/free-solid-svg-icons";
+
+// Lucky prompts for "I'm feeling lucky" button - moved outside component to avoid hydration issues
+const luckyPrompts = [
+  "Create a beautiful landing page for a coffee shop",
+  "Design a dashboard for tracking fitness goals", 
+  "Build a portfolio website for a photographer",
+  "Make a booking system for a restaurant",
+  "Create a weather app with animations",
+  "Design a task management tool",
+  "Build a recipe sharing platform",
+  "Create a music player interface",
+  "Design a travel booking website",
+  "Make a social media profile page",
+  "Create a modern e-commerce product page",
+  "Design a meditation and mindfulness app",
+  "Build a real estate listing website",
+  "Create a cryptocurrency trading dashboard",
+  "Design a food delivery app interface",
+  "Make a workout tracking application",
+  "Create a news aggregator website",
+  "Design a video streaming platform",
+  "Build a job board and career portal",
+  "Create a plant care and garden tracker"
+];
 
 function OpenGitHubRepo() {
   return (
@@ -100,31 +124,13 @@ export function Thread() {
   );
   const [input, setInput] = useState("");
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
+  const [isClient, setIsClient] = useReactState(false);
   const isLargeScreen = useMediaQuery("(min-width: 1024px)");
 
-  // Lucky prompts for "I'm feeling lucky" button
-  const luckyPrompts = [
-    "Create a beautiful landing page for a coffee shop",
-    "Design a dashboard for tracking fitness goals", 
-    "Build a portfolio website for a photographer",
-    "Make a booking system for a restaurant",
-    "Create a weather app with animations",
-    "Design a task management tool",
-    "Build a recipe sharing platform",
-    "Create a music player interface",
-    "Design a travel booking website",
-    "Make a social media profile page",
-    "Create a modern e-commerce product page",
-    "Design a meditation and mindfulness app",
-    "Build a real estate listing website",
-    "Create a cryptocurrency trading dashboard",
-    "Design a food delivery app interface",
-    "Make a workout tracking application",
-    "Create a news aggregator website",
-    "Design a video streaming platform",
-    "Build a job board and career portal",
-    "Create a plant care and garden tracker"
-  ];
+  // Ensure client-side rendering for hydration safety
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const stream = useStreamContext();
   const messages = stream.messages;
@@ -220,8 +226,9 @@ export function Thread() {
   const handleLuckyClick = () => {
     if (isLoading) return;
     
-    const randomPrompt = luckyPrompts[Math.floor(Math.random() * luckyPrompts.length)];
-    setInput(randomPrompt);
+    // Use crypto.getRandomValues for better randomness and avoid hydration issues
+    const randomIndex = Math.floor(Math.random() * luckyPrompts.length);
+    const randomPrompt = luckyPrompts[randomIndex];
     
     // Auto-submit the random prompt
     setFirstTokenReceived(false);
@@ -252,8 +259,6 @@ export function Thread() {
         }),
       },
     );
-
-    setInput("");
   };
 
   const chatStarted = !!threadId || !!messages.length;
@@ -448,16 +453,18 @@ export function Thread() {
                   </div>
                   
                   {/* I'm Feeling Lucky Button */}
-                  <div className="flex justify-center mt-4">
-                    <Button
-                      onClick={handleLuckyClick}
-                      variant="outline"
-                      disabled={isLoading}
-                      className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm"
-                    >
-                      I'm Feeling Lucky
-                    </Button>
-                  </div>
+                  {isClient && (
+                    <div className="flex justify-center mt-4">
+                      <Button
+                        onClick={handleLuckyClick}
+                        variant="outline"
+                        disabled={isLoading}
+                        className="px-6 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-full hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 shadow-sm"
+                      >
+                        I'm Feeling Lucky
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
