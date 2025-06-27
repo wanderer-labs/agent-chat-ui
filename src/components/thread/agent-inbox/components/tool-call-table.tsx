@@ -29,8 +29,9 @@ export function ToolCallTable({ toolCall }: { toolCall: ToolCall }) {
 
             try {
               valueStr = valueStr || JSON.stringify(value, null);
-            } catch (_) {
+            } catch (error) {
               // failed to stringify, just assign an empty string
+              console.warn("Failed to stringify value:", error);
               valueStr = "";
             }
 
