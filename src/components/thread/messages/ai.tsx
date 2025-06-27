@@ -11,7 +11,7 @@ import { MessageContentComplex } from "@langchain/core/messages";
 import { Fragment } from "react/jsx-runtime";
 import { isAgentInboxInterruptSchema } from "@/lib/agent-inbox-interrupt";
 import { ThreadView } from "../agent-inbox";
-import { useQueryState, parseAsBoolean } from "nuqs";
+
 import { GenericInterruptView } from "./generic-interrupt";
 import { useArtifact } from "../artifact";
 
@@ -104,10 +104,6 @@ export function AssistantMessage({
 }) {
   const content = message?.content ?? [];
   const contentString = getContentString(content);
-  const [hideToolCalls] = useQueryState(
-    "hideToolCalls",
-    parseAsBoolean.withDefault(false),
-  );
 
   const thread = useStreamContext();
   const isLastMessage =
@@ -136,10 +132,6 @@ export function AssistantMessage({
   const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
 
-  if (isToolResult && hideToolCalls) {
-    return null;
-  }
-
   return (
     <div className="group mr-auto flex items-start gap-2">
       <div className="flex flex-col gap-2">
@@ -160,19 +152,15 @@ export function AssistantMessage({
               </div>
             )}
 
-            {!hideToolCalls && (
-              <>
-                {(hasToolCalls && toolCallsHaveContents && (
-                  <ToolCalls toolCalls={message.tool_calls} />
-                )) ||
-                  (hasAnthropicToolCalls && (
-                    <ToolCalls toolCalls={anthropicStreamedToolCalls} />
-                  )) ||
-                  (hasToolCalls && (
-                    <ToolCalls toolCalls={message.tool_calls} />
-                  ))}
-              </>
-            )}
+            {(hasToolCalls && toolCallsHaveContents && (
+              <ToolCalls toolCalls={message.tool_calls} />
+            )) ||
+              (hasAnthropicToolCalls && (
+                <ToolCalls toolCalls={anthropicStreamedToolCalls} />
+              )) ||
+              (hasToolCalls && (
+                <ToolCalls toolCalls={message.tool_calls} />
+              ))}
 
             {message && (
               <CustomComponent
