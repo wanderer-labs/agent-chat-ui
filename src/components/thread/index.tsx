@@ -311,17 +311,84 @@ export function Thread() {
             {hasCustomUI ? (
               /* Full-screen HTML content */
               <FullScreenCustomComponents />
-            ) : (
-              /* Default welcome state or loading */
-              <div className="flex-1 flex items-center justify-center">
-                {!chatStarted ? (
+            ) : !chatStarted ? (
+              /* Centered welcome state with input */
+              <div className="flex-1 flex items-center justify-center p-4">
+                <div className="flex flex-col items-center gap-8 w-full max-w-2xl">
                   <div className="flex flex-col items-center gap-3">
-                    <LangGraphLogoSVG className="h-8 flex-shrink-0" />
-                    <h1 className="text-2xl font-semibold tracking-tight">
+                    <LangGraphLogoSVG className="h-12 flex-shrink-0" />
+                    <h1 className="text-3xl font-semibold tracking-tight">
                       Agent Chat
                     </h1>
                   </div>
-                ) : isLoading && !firstTokenReceived ? (
+                  
+                  {/* Centered Input Form */}
+                  <div className="w-full">
+                    <div
+                      className={cn(
+                        "bg-muted relative z-10 mx-auto w-full rounded-2xl shadow-lg transition-all border border-solid",
+                      )}
+                    >
+                      <form
+                        onSubmit={handleSubmit}
+                        className="flex items-end gap-2 p-3"
+                      >
+                        <textarea
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (
+                              e.key === "Enter" &&
+                              !e.shiftKey &&
+                              !e.metaKey &&
+                              !e.nativeEvent.isComposing
+                            ) {
+                              e.preventDefault();
+                              const el = e.target as HTMLElement | undefined;
+                              const form = el?.closest("form");
+                              form?.requestSubmit();
+                            }
+                          }}
+                          placeholder="Go anywhere"
+                          className="flex-1 field-sizing-content resize-none border-none bg-transparent p-2 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none min-h-[40px] max-h-[120px]"
+                        />
+
+                        {stream.isLoading ? (
+                          <Button
+                            key="stop"
+                            onClick={() => stream.stop()}
+                            variant="ghost"
+                            className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100"
+                          >
+                            <FontAwesomeIcon 
+                              icon={faSpinner} 
+                              className="text-gray-600 animate-spin" 
+                              size="lg"
+                            />
+                          </Button>
+                        ) : (
+                          <Button
+                            type="submit"
+                            variant="ghost"
+                            className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100"
+                            disabled={isLoading || !input.trim()}
+                          >
+                            <FontAwesomeIcon 
+                              icon={faCircleArrowRight} 
+                              className="text-blue-600" 
+                              size="lg"
+                            />
+                          </Button>
+                        )}
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Chat started - show messages area and loading */
+              <div className="flex-1 flex items-center justify-center">
+                {isLoading && !firstTokenReceived ? (
                   <div className="flex items-center gap-2">
                     <FontAwesomeIcon 
                       icon={faSpinner} 
@@ -334,67 +401,69 @@ export function Thread() {
             )}
           </div>
 
-          {/* Bottom Input Form */}
-          <div className="border-t bg-white p-4">
-            <div
-              className={cn(
-                "bg-muted relative z-10 mx-auto w-full max-w-3xl rounded-2xl shadow-xs transition-all border border-solid",
-              )}
-            >
-              <form
-                onSubmit={handleSubmit}
-                className="flex items-end gap-2 p-3"
-              >
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (
-                      e.key === "Enter" &&
-                      !e.shiftKey &&
-                      !e.metaKey &&
-                      !e.nativeEvent.isComposing
-                    ) {
-                      e.preventDefault();
-                      const el = e.target as HTMLElement | undefined;
-                      const form = el?.closest("form");
-                      form?.requestSubmit();
-                    }
-                  }}
-                  placeholder="Go anywhere"
-                  className="flex-1 field-sizing-content resize-none border-none bg-transparent p-2 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none min-h-[40px] max-h-[120px]"
-                />
-
-                {stream.isLoading ? (
-                  <Button
-                    key="stop"
-                    onClick={() => stream.stop()}
-                    variant="ghost"
-                    className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100"
-                  >
-                    <FontAwesomeIcon 
-                      icon={faSpinner} 
-                      className="text-gray-600 animate-spin" 
-                      size="lg"
-                    />
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    variant="ghost"
-                    className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100"
-                    disabled={isLoading || !input.trim()}
-                  >
-                    <FontAwesomeIcon 
-                      icon={faCircleArrowRight} 
-                      className="text-blue-600" 
-                      size="lg"
-                    />
-                  </Button>
+          {/* Bottom Input Form - Only show when chat has started */}
+          {chatStarted && (
+            <div className="border-t bg-white p-4">
+              <div
+                className={cn(
+                  "bg-muted relative z-10 mx-auto w-full max-w-3xl rounded-2xl shadow-xs transition-all border border-solid",
                 )}
-              </form>
+              >
+                <form
+                  onSubmit={handleSubmit}
+                  className="flex items-end gap-2 p-3"
+                >
+                  <textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (
+                        e.key === "Enter" &&
+                        !e.shiftKey &&
+                        !e.metaKey &&
+                        !e.nativeEvent.isComposing
+                      ) {
+                        e.preventDefault();
+                        const el = e.target as HTMLElement | undefined;
+                        const form = el?.closest("form");
+                        form?.requestSubmit();
+                      }
+                    }}
+                    placeholder="Go anywhere"
+                    className="flex-1 field-sizing-content resize-none border-none bg-transparent p-2 shadow-none ring-0 outline-none focus:ring-0 focus:outline-none min-h-[40px] max-h-[120px]"
+                  />
+
+                  {stream.isLoading ? (
+                    <Button
+                      key="stop"
+                      onClick={() => stream.stop()}
+                      variant="ghost"
+                      className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100"
+                    >
+                      <FontAwesomeIcon 
+                        icon={faSpinner} 
+                        className="text-gray-600 animate-spin" 
+                        size="lg"
+                      />
+                    </Button>
+                  ) : (
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      className="flex-shrink-0 p-2 rounded-full hover:bg-gray-100"
+                      disabled={isLoading || !input.trim()}
+                    >
+                      <FontAwesomeIcon 
+                        icon={faCircleArrowRight} 
+                        className="text-blue-600" 
+                        size="lg"
+                      />
+                    </Button>
+                  )}
+                </form>
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
         <div className="relative flex flex-col border-l">
           <div className="absolute inset-0 flex min-w-[30vw] flex-col">
